@@ -68,7 +68,7 @@ The application is structured around a horizontal navigation system containing 1
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/<your-username>/AI-travel-concierge.git
+git clone https://github.com/7625-k/AI-travel-concierge.git
 cd AI-travel-concierge
 ```
 
@@ -109,7 +109,7 @@ This app is optimized to run seamlessly on **Streamlit Community Cloud** (free a
 1. Push your project to your GitHub repository.
 2. Sign in to [share.streamlit.io](https://share.streamlit.io) using your GitHub account.
 3. Click **New app** and specify:
-   * **Repository**: `username/AI-travel-concierge`
+   * **Repository**: `7625-k/AI-travel-concierge`
    * **Branch**: `main`
    * **Main file path**: `src/ui/app.py`
 4. Click **Advanced settings...** next to the deploy button.
