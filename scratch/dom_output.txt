@@ -1,0 +1,11 @@
+Active Button (Chat Assistant) Computed Styles:
+  background-color = 'rgb(79, 70, 229)'
+  background-image = 'linear-gradient(135deg, rgb(99, 102, 241) 0%, rgb(79, 70, 229) 100%)'
+  color = 'rgb(255, 255, 255)'
+  border = '0px none rgb(255, 255, 255)'
+
+Inactive Button (AI Trip Planner) Computed Styles:
+  background-color = 'rgba(0, 0, 0, 0)'
+  background-image = 'none'
+  color = 'rgb(148, 163, 184)'
+  border = '0px none rgb(148, 163, 184)'

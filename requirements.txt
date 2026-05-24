@@ -1,0 +1,8 @@
+streamlit
+groq
+python-dotenv
+requests
+folium
+streamlit-folium
+pandas
+fpdf2

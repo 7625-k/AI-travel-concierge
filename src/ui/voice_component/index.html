@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: transparent;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 14px;
+    }
+
+    .mic-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+    }
+
+    .mic-button {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      outline: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      position: relative;
+      z-index: 2;
+    }
+
+    .mic-button:hover {
+      transform: scale(1.1) translateY(-1px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5);
+      background: linear-gradient(135deg, #818CF8 0%, #6366F1 100%);
+    }
+
+    .mic-button:active {
+      transform: scale(0.95) translateY(0px);
+    }
+
+    .mic-icon {
+      fill: #ffffff;
+      width: 22px;
+      height: 22px;
+      transition: fill 0.3s ease;
+    }
+
+    /* Pulse animation when listening */
+    .listening .mic-button {
+      background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      animation: pulse-red 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .listening .mic-icon {
+      animation: shake 0.5s infinite alternate;
+    }
+
+    .mic-status {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #94A3B8;
+      white-space: nowrap;
+      transition: color 0.3s ease;
+      letter-spacing: 0.01em;
+    }
+
+    .listening .mic-status {
+      color: #F87171;
+    }
+
+    @keyframes pulse-red {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
+      70% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+
+    @keyframes shake {
+      0% { transform: rotate(-6deg); }
+      100% { transform: rotate(6deg); }
+    }
+
+    @keyframes shake-status {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mic-container" id="micContainer">
+    <button class="mic-button" id="micBtn" title="Speak to Voice Assistant">
+      <svg class="mic-icon" viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+      </svg>
+    </button>
+  </div>
+  <div class="mic-status" id="micStatus">Click to speak</div>
+
+  <script>
+    // Streamlit API Communication Helpers
+    function sendValueToStreamlit(value) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:setComponentValue",
+        value: value
+      }, "*");
+    }
+
+    const micBtn = document.getElementById('micBtn');
+    const micContainer = document.getElementById('micContainer');
+    const micStatus = document.getElementById('micStatus');
+    
+    let recognition = null;
+    let isListening = false;
+    let lastSpokenText = ""; // Keep track of spoken content to prevent repetition
+
+    // Speech-to-Text Setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        isListening = true;
+        document.body.classList.add('listening');
+        micStatus.textContent = "Listening...";
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        document.body.classList.remove('listening');
+        if (micStatus.textContent === "Listening...") {
+          micStatus.textContent = "Click to speak";
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        isListening = false;
+        document.body.classList.remove('listening');
+        micStatus.textContent = "Error: " + event.error;
+        setTimeout(() => {
+          micStatus.textContent = "Click to speak";
+        }, 3000);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        micStatus.textContent = "Processing...";
+        
+        // Send transcript back to Streamlit
+        sendValueToStreamlit({
+          text: transcript,
+          timestamp: Date.now()
+        });
+
+        setTimeout(() => {
+          micStatus.textContent = "Click to speak";
+        }, 1500);
+      };
+
+      micBtn.addEventListener('click', () => {
+        if (isListening) {
+          recognition.stop();
+        } else {
+          try {
+            recognition.start();
+          } catch (e) {
+            console.error("Failed to start speech recognition:", e);
+          }
+        }
+      });
+    } else {
+      micStatus.textContent = "Voice input not supported in this browser";
+      micBtn.style.opacity = '0.5';
+      micBtn.style.cursor = 'not-allowed';
+    }
+
+    // Clean markdown text for friendly reading
+    function cleanTextForSpeech(text) {
+      if (!text) return "";
+      return text
+        .replace(/\*\*([^*]+)\*\*/g, "$1") // Strip bold asterisks
+        .replace(/\*([^*]+)\*/g, "$1")     // Strip italic asterisks
+        .replace(/#+\s+/g, "")             // Strip headers
+        .replace(/[`_]/g, "")              // Strip code ticks / underscores
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Strip links, keeping only display text
+        .replace(/https?:\/\/[^\s]+/g, "link")  // Replace URLs with "link"
+        .trim();
+    }
+
+    // Listen to parent Streamlit messages for Text-to-Speech
+    window.addEventListener("message", (event) => {
+      if (event.data.type === "streamlit:render") {
+        // Ensure parent iframe adjusts to proper height
+        window.parent.postMessage({
+          isStreamlitMessage: true,
+          type: "streamlit:setFrameHeight",
+          height: 60
+        }, "*");
+
+        const args = event.data.args;
+        if (args) {
+          const lastMsg = args.last_assistant_msg;
+          const readAloud = args.read_aloud;
+
+          if (readAloud && lastMsg && lastMsg !== lastSpokenText) {
+            lastSpokenText = lastMsg;
+            
+            // Speak the response using SpeechSynthesis
+            if ('speechSynthesis' in window) {
+              window.speechSynthesis.cancel(); // Cancel any current speech first
+              
+              const cleanText = cleanTextForSpeech(lastMsg);
+              const utterance = new SpeechSynthesisUtterance(cleanText);
+              utterance.lang = 'en-US';
+              
+              // Optional: Customize voice/pitch/rate if desired
+              utterance.rate = 1.0; 
+              utterance.pitch = 1.0;
+
+              window.speechSynthesis.speak(utterance);
+            }
+          }
+        }
+      }
+    });
+
+    // Notify Streamlit that component is ready (triggers rendering callback)
+    // We send a default null/empty value on load
+    window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:componentReady",
+      apiVersion: 1
+    }, "*");
+
+    // Send frame height on ready as well
+    window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:setFrameHeight",
+      height: 60
+    }, "*");
+  </script>
+</body>
+</html>
