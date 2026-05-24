@@ -4,6 +4,9 @@ An advanced, interactive, and beautiful AI-powered travel assistant web applicat
 
 Developed using **Streamlit**, **Groq (Llama 3)**, **OpenWeatherMap**, **Nominatim OpenStreetMap**, and **SQLite**.
 
+# 🌐 Live Demo
+https://ai-travel-conciergee.streamlit.app/
+
 ---
 
 ## 🌟 Key Features
