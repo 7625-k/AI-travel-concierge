@@ -11,9 +11,26 @@ from src.tools.travel_tools import (
 
 load_dotenv()
 
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
+client = None
+
+def get_client():
+    global client
+    if client is None:
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            try:
+                import streamlit as st
+                if "GROQ_API_KEY" in st.secrets:
+                    api_key = st.secrets["GROQ_API_KEY"]
+            except Exception:
+                pass
+        if not api_key:
+            raise ValueError(
+                "GROQ_API_KEY is not set. Please set the GROQ_API_KEY environment variable "
+                "or configure it in your Streamlit secrets."
+            )
+        client = Groq(api_key=api_key)
+    return client
 
 
 def extract_city(text):
@@ -73,7 +90,7 @@ def ask_agent(question):
 
         prompt = question
 
-    completion = client.chat.completions.create(
+    completion = get_client().chat.completions.create(
 
         model="llama-3.3-70b-versatile",
 
@@ -109,7 +126,7 @@ def get_hotel_recommendations(destination, budget_class):
     Return ONLY a raw JSON array of objects. Do NOT wrap it in ```json ... ``` code blocks. Do not add any introductory or concluding text. Just return the valid JSON array starting with [ and ending with ].
     """
     try:
-        completion = client.chat.completions.create(
+        completion = get_client().chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are a precise JSON travel generator. Output raw JSON only."},
@@ -175,7 +192,7 @@ def get_flight_recommendations(origin, destination, departure_date, travel_class
     Return ONLY a raw JSON array of objects. Do NOT wrap it in ```json ... ``` code blocks. Do not add any introductory or concluding text. Just return the valid JSON array starting with [ and ending with ].
     """
     try:
-        completion = client.chat.completions.create(
+        completion = get_client().chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are a precise JSON travel generator. Output raw JSON only."},
@@ -404,7 +421,7 @@ def get_mood_suggestions(mood_query):
         ]
 
     try:
-        completion = client.chat.completions.create(
+        completion = get_client().chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are a precise JSON travel generator. Output raw JSON only."},
@@ -512,7 +529,7 @@ def get_packing_list(destination, duration, trip_type, season):
         fallbacks[cat] = list(dict.fromkeys(fallbacks[cat]))
 
     try:
-        completion = client.chat.completions.create(
+        completion = get_client().chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are a precise JSON travel assistant. Output raw JSON only matching the requested schema."},
@@ -640,7 +657,7 @@ def analyze_review_sentiment(review_text):
     }
     
     try:
-        completion = client.chat.completions.create(
+        completion = get_client().chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are a precise JSON review analyst. Output raw JSON only matching the requested schema."},
